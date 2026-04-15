@@ -220,15 +220,45 @@ class NotificationManager {
   }
 
   sendNotification(notification, eventData) {
+    if (notification.ntfyTopic) {
+      return this.sendNtfyNotification(notification, eventData)
+    }
+    return this.sendAppriseNotification(notification, eventData)
+  }
+
+  sendAppriseNotification(notification, eventData) {
+    if (!Database.notificationSettings.appriseApiUrl) {
+      Logger.error(`[NotificationManager] sendAppriseNotification: Apprise API URL is not configured`)
+      return Promise.resolve(false)
+    }
     const payload = notification.getApprisePayload(eventData)
     return axios
       .post(Database.notificationSettings.appriseApiUrl, payload, { timeout: 6000 })
       .then((response) => {
-        Logger.debug(`[NotificationManager] sendNotification: ${notification.eventName}/${notification.id} response=`, response.data)
+        Logger.debug(`[NotificationManager] sendAppriseNotification: ${notification.eventName}/${notification.id} response=`, response.data)
         return true
       })
       .catch((error) => {
-        Logger.error(`[NotificationManager] sendNotification: ${notification.eventName}/${notification.id} error=`, error)
+        Logger.error(`[NotificationManager] sendAppriseNotification: ${notification.eventName}/${notification.id} error=`, error)
+        return false
+      })
+  }
+
+  sendNtfyNotification(notification, eventData) {
+    const payload = notification.getNtfyPayload(eventData)
+    const ntfyUrl = Database.notificationSettings.ntfyUrl || 'https://ntfy.sh'
+    const headers = { 'Content-Type': 'application/json' }
+    if (Database.notificationSettings.ntfyToken) {
+      headers['Authorization'] = `Bearer ${Database.notificationSettings.ntfyToken}`
+    }
+    return axios
+      .post(ntfyUrl, payload, { timeout: 6000, headers })
+      .then((response) => {
+        Logger.debug(`[NotificationManager] sendNtfyNotification: ${notification.eventName}/${notification.id} response=`, response.data)
+        return true
+      })
+      .catch((error) => {
+        Logger.error(`[NotificationManager] sendNtfyNotification: ${notification.eventName}/${notification.id} error=`, error)
         return false
       })
   }

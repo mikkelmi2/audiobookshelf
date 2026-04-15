@@ -10,7 +10,11 @@
         <div class="w-full px-3 py-5 md:p-12">
           <ui-dropdown v-model="newNotification.eventName" :label="$strings.LabelNotificationEvent" :items="eventOptions" class="mb-4" @input="eventOptionUpdated" />
 
-          <ui-multi-select ref="urlsInput" v-model="newNotification.urls" :label="$strings.LabelNotificationAppriseURL" class="mb-2" />
+          <ui-dropdown v-model="selectedProvider" :label="$strings.LabelNotificationProvider" :items="providerOptions" class="mb-4" />
+
+          <ui-multi-select v-if="selectedProvider === 'apprise'" ref="urlsInput" v-model="newNotification.urls" :label="$strings.LabelNotificationAppriseURL" class="mb-2" />
+
+          <ui-text-input-with-label v-if="selectedProvider === 'ntfy'" v-model="newNotification.ntfyTopic" :label="$strings.LabelNotificationNtfyTopic" class="mb-2" />
 
           <ui-text-input-with-label v-model="newNotification.titleTemplate" :label="$strings.LabelNotificationTitleTemplate" class="mb-2" />
 
@@ -51,7 +55,8 @@ export default {
     return {
       processing: false,
       newNotification: {},
-      isNew: true
+      isNew: true,
+      selectedProvider: 'apprise'
     }
   },
   watch: {
@@ -75,6 +80,12 @@ export default {
     notificationEvents() {
       if (!this.notificationData) return []
       return this.notificationData.events || []
+    },
+    providerOptions() {
+      return [
+        { value: 'apprise', text: 'Apprise' },
+        { value: 'ntfy', text: 'ntfy.sh' }
+      ]
     },
     eventOptions() {
       return this.notificationEvents.map((e) => {
@@ -109,11 +120,19 @@ export default {
       if (this.$refs.modal) this.$refs.modal.setHide()
     },
     submitForm() {
-      this.$refs.urlsInput?.forceBlur()
-
-      if (!this.newNotification.urls.length) {
-        this.$toast.error(this.$strings.ToastAppriseUrlRequired)
-        return
+      if (this.selectedProvider === 'apprise') {
+        this.$refs.urlsInput?.forceBlur()
+        if (!this.newNotification.urls.length) {
+          this.$toast.error(this.$strings.ToastAppriseUrlRequired)
+          return
+        }
+        this.newNotification.ntfyTopic = null
+      } else {
+        if (!this.newNotification.ntfyTopic) {
+          this.$toast.error(this.$strings.ToastNtfyTopicRequired)
+          return
+        }
+        this.newNotification.urls = []
       }
 
       if (this.isNew) {
@@ -168,17 +187,20 @@ export default {
     init() {
       this.isNew = !this.notification
       if (this.notification) {
+        this.selectedProvider = this.notification.ntfyTopic ? 'ntfy' : 'apprise'
         this.newNotification = {
           id: this.notification.id,
           libraryId: this.notification.libraryId,
           eventName: this.notification.eventName,
-          urls: [...this.notification.urls],
+          urls: [...(this.notification.urls || [])],
           titleTemplate: this.notification.titleTemplate,
           bodyTemplate: this.notification.bodyTemplate,
           enabled: this.notification.enabled,
-          type: this.notification.type
+          type: this.notification.type,
+          ntfyTopic: this.notification.ntfyTopic || null
         }
       } else {
+        this.selectedProvider = 'apprise'
         this.newNotification = {
           libraryId: null,
           eventName: 'onTest',
@@ -186,7 +208,8 @@ export default {
           titleTemplate: '',
           bodyTemplate: '',
           enabled: true,
-          type: null
+          type: null,
+          ntfyTopic: null
         }
         this.eventOptionUpdated()
       }

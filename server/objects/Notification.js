@@ -9,6 +9,7 @@ class Notification {
     this.titleTemplate = ''
     this.bodyTemplate = ''
     this.type = 'info'
+    this.ntfyTopic = null
     this.enabled = false
 
     this.lastFiredAt = null
@@ -30,6 +31,7 @@ class Notification {
     this.titleTemplate = notification.titleTemplate || ''
     this.bodyTemplate = notification.bodyTemplate || ''
     this.type = notification.type || 'info'
+    this.ntfyTopic = notification.ntfyTopic || null
     this.enabled = !!notification.enabled
     this.lastFiredAt = notification.lastFiredAt || null
     this.lastAttemptFailed = !!notification.lastAttemptFailed
@@ -48,6 +50,7 @@ class Notification {
       bodyTemplate: this.bodyTemplate,
       enabled: this.enabled,
       type: this.type,
+      ntfyTopic: this.ntfyTopic,
       lastFiredAt: this.lastFiredAt,
       lastAttemptFailed: this.lastAttemptFailed,
       numConsecutiveFailedAttempts: this.numConsecutiveFailedAttempts,
@@ -60,11 +63,12 @@ class Notification {
     this.id = uuidv4()
     this.libraryId = payload.libraryId || null
     this.eventName = payload.eventName
-    this.urls = payload.urls
+    this.urls = payload.urls || []
     this.titleTemplate = payload.titleTemplate
     this.bodyTemplate = payload.bodyTemplate
     this.enabled = !!payload.enabled
     this.type = payload.type || null
+    this.ntfyTopic = payload.ntfyTopic || null
     this.createdAt = Date.now()
   }
 
@@ -76,7 +80,7 @@ class Notification {
       this.numConsecutiveFailedAttempts = 0
     }
 
-    const keysToUpdate = ['libraryId', 'eventName', 'urls', 'titleTemplate', 'bodyTemplate', 'enabled', 'type']
+    const keysToUpdate = ['libraryId', 'eventName', 'urls', 'titleTemplate', 'bodyTemplate', 'enabled', 'type', 'ntfyTopic']
     var hasUpdated = false
     for (const key of keysToUpdate) {
       if (payload[key] !== undefined) {
@@ -127,6 +131,14 @@ class Notification {
       urls: this.urls,
       title: this.parseTitleTemplate(data),
       body: this.parseBodyTemplate(data)
+    }
+  }
+
+  getNtfyPayload(data) {
+    return {
+      topic: this.ntfyTopic,
+      title: this.parseTitleTemplate(data),
+      message: this.parseBodyTemplate(data)
     }
   }
 }

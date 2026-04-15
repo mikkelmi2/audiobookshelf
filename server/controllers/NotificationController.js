@@ -120,7 +120,7 @@ class NotificationController {
    * @param {Response} res
    */
   async sendNotificationTest(req, res) {
-    if (!Database.notificationSettings.isUseable) return res.status(400).send('Apprise is not configured')
+    if (!Database.notificationSettings.isUseable) return res.status(400).send('No notification service is configured')
 
     const success = await NotificationManager.sendTestNotification(req.notification)
     if (success) res.sendStatus(200)

@@ -7,6 +7,8 @@ class NotificationSettings {
     this.id = 'notification-settings'
     this.appriseType = 'api'
     this.appriseApiUrl = null
+    this.ntfyUrl = null
+    this.ntfyToken = null
     this.notifications = []
     this.maxFailedAttempts = 5
     this.maxNotificationQueue = 20 // once reached events will be ignored
@@ -20,6 +22,8 @@ class NotificationSettings {
   construct(settings) {
     this.appriseType = settings.appriseType
     this.appriseApiUrl = settings.appriseApiUrl || null
+    this.ntfyUrl = settings.ntfyUrl || null
+    this.ntfyToken = settings.ntfyToken || null
     this.notifications = (settings.notifications || []).map((n) => new Notification(n))
     this.maxFailedAttempts = settings.maxFailedAttempts || 5
     this.maxNotificationQueue = settings.maxNotificationQueue || 20
@@ -31,6 +35,8 @@ class NotificationSettings {
       id: this.id,
       appriseType: this.appriseType,
       appriseApiUrl: this.appriseApiUrl,
+      ntfyUrl: this.ntfyUrl,
+      ntfyToken: this.ntfyToken,
       notifications: this.notifications.map((n) => n.toJSON()),
       maxFailedAttempts: this.maxFailedAttempts,
       maxNotificationQueue: this.maxNotificationQueue,
@@ -39,7 +45,7 @@ class NotificationSettings {
   }
 
   get isUseable() {
-    return !!this.appriseApiUrl
+    return !!this.appriseApiUrl || !!this.ntfyUrl
   }
 
   /**
@@ -74,21 +80,35 @@ class NotificationSettings {
     if (!payload) return false
 
     var hasUpdates = false
-    if (payload.appriseApiUrl !== this.appriseApiUrl) {
+    if (payload.appriseApiUrl !== undefined && payload.appriseApiUrl !== this.appriseApiUrl) {
       this.appriseApiUrl = payload.appriseApiUrl || null
       hasUpdates = true
     }
 
-    const _maxFailedAttempts = isNullOrNaN(payload.maxFailedAttempts) ? 5 : Number(payload.maxFailedAttempts)
-    if (_maxFailedAttempts !== this.maxFailedAttempts) {
-      this.maxFailedAttempts = _maxFailedAttempts
+    if (payload.ntfyUrl !== undefined && payload.ntfyUrl !== this.ntfyUrl) {
+      this.ntfyUrl = payload.ntfyUrl || null
       hasUpdates = true
     }
 
-    const _maxNotificationQueue = isNullOrNaN(payload.maxNotificationQueue) ? 20 : Number(payload.maxNotificationQueue)
-    if (_maxNotificationQueue !== this.maxNotificationQueue) {
-      this.maxNotificationQueue = _maxNotificationQueue
+    if (payload.ntfyToken !== undefined && payload.ntfyToken !== this.ntfyToken) {
+      this.ntfyToken = payload.ntfyToken || null
       hasUpdates = true
+    }
+
+    if (payload.maxFailedAttempts !== undefined) {
+      const _maxFailedAttempts = isNullOrNaN(payload.maxFailedAttempts) ? 5 : Number(payload.maxFailedAttempts)
+      if (_maxFailedAttempts !== this.maxFailedAttempts) {
+        this.maxFailedAttempts = _maxFailedAttempts
+        hasUpdates = true
+      }
+    }
+
+    if (payload.maxNotificationQueue !== undefined) {
+      const _maxNotificationQueue = isNullOrNaN(payload.maxNotificationQueue) ? 20 : Number(payload.maxNotificationQueue)
+      if (_maxNotificationQueue !== this.maxNotificationQueue) {
+        this.maxNotificationQueue = _maxNotificationQueue
+        hasUpdates = true
+      }
     }
 
     return hasUpdates
@@ -96,7 +116,7 @@ class NotificationSettings {
 
   createNotification(payload) {
     if (!payload) return false
-    if (!payload.eventName || !payload.urls.length) return false
+    if (!payload.eventName || (!payload.urls?.length && !payload.ntfyTopic)) return false
 
     const notification = new Notification()
     notification.setData(payload)

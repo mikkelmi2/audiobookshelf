@@ -24,11 +24,22 @@
           <ui-btn :loading="savingSettings" type="submit">{{ $strings.ButtonSave }}</ui-btn>
         </div>
       </form>
+    </app-settings-content>
 
-      <div class="w-full h-px bg-white/10 my-6" />
+    <app-settings-content :header-text="$strings.HeaderNtfyNotificationSettings" :description="$strings.MessageNtfyDescription">
+      <form @submit.prevent="submitNtfyForm">
+        <ui-text-input-with-label ref="ntfyUrlInput" v-model="ntfyUrl" :disabled="savingSettings" label="ntfy Server URL" placeholder="https://ntfy.sh" class="mb-2" />
 
+        <ui-text-input-with-label ref="ntfyTokenInput" v-model="ntfyToken" :disabled="savingSettings" label="ntfy Auth Token" type="password" class="mb-2" />
+
+        <div class="flex items-center justify-end pt-4">
+          <ui-btn :loading="savingSettings" type="submit">{{ $strings.ButtonSave }}</ui-btn>
+        </div>
+      </form>
+    </app-settings-content>
+
+    <app-settings-content :header-text="$strings.HeaderNotifications">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold">{{ $strings.HeaderNotifications }}</h2>
         <ui-btn small color="bg-success" class="flex items-center" @click="clickCreate">{{ $strings.ButtonCreate }} <span class="material-symbols text-lg pl-2">add</span></ui-btn>
       </div>
 
@@ -56,6 +67,8 @@ export default {
       loading: false,
       savingSettings: false,
       appriseApiUrl: null,
+      ntfyUrl: null,
+      ntfyToken: null,
       maxNotificationQueue: 0,
       maxFailedAttempts: 0,
       notifications: [],
@@ -116,17 +129,10 @@ export default {
 
       return true
     },
-    submitForm() {
-      if (!this.validateForm()) return
-
-      const updatePayload = {
-        appriseApiUrl: this.appriseApiUrl || null,
-        maxNotificationQueue: Number(this.maxNotificationQueue),
-        maxFailedAttempts: Number(this.maxFailedAttempts)
-      }
+    saveSettings(payload) {
       this.savingSettings = true
       this.$axios
-        .$patch('/api/notifications', updatePayload)
+        .$patch('/api/notifications', payload)
         .then(() => {
           this.$toast.success(this.$strings.ToastNotificationSettingsUpdateSuccess)
         })
@@ -137,6 +143,21 @@ export default {
         .finally(() => {
           this.savingSettings = false
         })
+    },
+    submitForm() {
+      if (!this.validateForm()) return
+
+      this.saveSettings({
+        appriseApiUrl: this.appriseApiUrl || null,
+        maxNotificationQueue: Number(this.maxNotificationQueue),
+        maxFailedAttempts: Number(this.maxFailedAttempts)
+      })
+    },
+    submitNtfyForm() {
+      this.saveSettings({
+        ntfyUrl: this.ntfyUrl || null,
+        ntfyToken: this.ntfyToken || null
+      })
     },
     async init() {
       this.loading = true
@@ -155,6 +176,8 @@ export default {
     setNotificationSettings(notificationSettings) {
       this.notificationSettings = notificationSettings
       this.appriseApiUrl = notificationSettings.appriseApiUrl
+      this.ntfyUrl = notificationSettings.ntfyUrl || null
+      this.ntfyToken = notificationSettings.ntfyToken || null
       this.maxNotificationQueue = notificationSettings.maxNotificationQueue
       this.maxFailedAttempts = notificationSettings.maxFailedAttempts
       this.notifications = notificationSettings.notifications || []

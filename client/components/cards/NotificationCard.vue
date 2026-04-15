@@ -14,7 +14,7 @@
       <ui-icon-btn bg-color="bg-error" :size="7" icon-font-size="1.2rem" icon="delete" @click="deleteNotificationClick" />
     </div>
     <div class="pt-4">
-      <p class="text-gray-300 text-xs md:text-sm mb-2">{{ notification.urls.join(', ') }}</p>
+      <p class="text-gray-300 text-xs md:text-sm mb-2">{{ notification.ntfyTopic ? $getString('LabelNotificationNtfyTopicPrefix', [notification.ntfyTopic]) : notification.urls.join(', ') }}</p>
 
       <p v-if="lastFiredAt && lastAttemptFailed" class="text-red-300 text-xs">Last attempt failed {{ $dateDistanceFromNow(lastFiredAt) }} ({{ numConsecutiveFailedAttempts }} attempt{{ numConsecutiveFailedAttempts === 1 ? '' : 's' }})</p>
       <p v-else-if="lastFiredAt" class="text-gray-400 text-xs">Last fired {{ $dateDistanceFromNow(lastFiredAt) }}</p>
